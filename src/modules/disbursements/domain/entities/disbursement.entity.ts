@@ -1,55 +1,36 @@
-import {
-  IsString,
-  IsNumber,
-  IsDate,
-  IsNotEmpty,
-  validateSync,
-} from 'class-validator';
+import { v4 as uuidv4 } from 'uuid';
 import { Amount, Fee } from '../value-objects';
 
 export class Disbursement {
-  @IsString()
-  @IsNotEmpty()
   readonly id: string;
-
-  @IsString()
-  @IsNotEmpty()
   readonly merchantId: string;
-
-  @IsNumber()
   readonly totalAmount: number;
-
-  @IsNumber()
   readonly fee: number;
-
-  @IsDate()
   readonly createdAt: Date;
-
-  @IsDate()
   readonly updatedAt: Date;
+  readonly reference: string;
 
-  constructor(props: {
-    id: string;
-    merchantId: string;
-    totalAmount: number;
-    fee: number;
-    createdAt: Date;
-    updatedAt: Date;
-  }) {
+  constructor(props: { merchantId: string; totalAmount: number; fee: number }) {
+    if (!props.merchantId) {
+      throw new Error('Merchant ID is required');
+    }
+
+    const date = new Date();
     const totalAmount = new Amount(props.totalAmount);
     const fee = new Fee(props.fee, totalAmount);
 
     Object.assign(this, {
       ...props,
+      id: uuidv4(),
       totalAmount: totalAmount.getValue(),
       fee: fee.getValue(),
+      createdAt: date,
+      updatedAt: date,
+      reference: this.generateReference(props.merchantId, date),
     });
+  }
 
-    const errors = validateSync(this);
-    if (errors.length) {
-      throw new Error(
-        `Validation failed: ${JSON.stringify(errors.join(', '))}`,
-      );
-    }
+  generateReference(merchantId: string, date: Date): string {
+    return `DISB-${merchantId.substring(0, 4).toUpperCase()}-${date.toISOString().split('T')[0]}`;
   }
 }

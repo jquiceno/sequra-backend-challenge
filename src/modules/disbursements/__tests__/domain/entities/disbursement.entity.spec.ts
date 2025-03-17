@@ -1,42 +1,75 @@
-import { createDisbursementMock } from '../../__mocks__/disbursement.mock';
+import { Disbursement } from '@modules/disbursements/domain/entities';
 
 describe('Disbursement Entity', () => {
   it('should create a valid disbursement', () => {
-    const disbursement = createDisbursementMock();
+    const disbursement = new Disbursement({
+      merchantId: 'merchant-123',
+      totalAmount: 1000,
+      fee: 100,
+    });
+
     expect(disbursement).toBeDefined();
-    expect(disbursement.id).toBe('123');
+    expect(disbursement.id).toBeDefined();
     expect(disbursement.merchantId).toBe('merchant-123');
     expect(disbursement.totalAmount).toBe(1000);
     expect(disbursement.fee).toBe(100);
-  });
-
-  it('should throw error when id is missing', () => {
-    expect(() => createDisbursementMock({ id: undefined })).toThrow(
-      'property id has failed',
-    );
+    expect(disbursement.reference).toMatch(/^DISB-MERC-\d{4}-\d{2}-\d{2}$/);
+    expect(disbursement.createdAt).toBeInstanceOf(Date);
+    expect(disbursement.updatedAt).toBeInstanceOf(Date);
   });
 
   it('should throw error when merchantId is missing', () => {
-    expect(() => createDisbursementMock({ merchantId: undefined })).toThrow(
-      'property merchantId has failed',
-    );
+    expect(
+      () =>
+        new Disbursement({
+          merchantId: '',
+          totalAmount: 1000,
+          fee: 100,
+        }),
+    ).toThrow('Merchant ID is required');
   });
 
-  it('should throw error when totalAmount is missing', () => {
-    expect(() => createDisbursementMock({ totalAmount: 0 })).toThrow(
-      'Amount must be greater than 0',
-    );
+  it('should throw error when totalAmount is zero', () => {
+    expect(
+      () =>
+        new Disbursement({
+          merchantId: 'merchant-123',
+          totalAmount: 0,
+          fee: 100,
+        }),
+    ).toThrow('Amount must be greater than 0');
+  });
+
+  it('should throw error when totalAmount is negative', () => {
+    expect(
+      () =>
+        new Disbursement({
+          merchantId: 'merchant-123',
+          totalAmount: -1,
+          fee: 100,
+        }),
+    ).toThrow('Amount must be greater than 0');
   });
 
   it('should throw error when fee is negative', () => {
-    expect(() => createDisbursementMock({ fee: -1 })).toThrow(
-      'Fee cannot be negative',
-    );
+    expect(
+      () =>
+        new Disbursement({
+          merchantId: 'merchant-123',
+          totalAmount: 1000,
+          fee: -1,
+        }),
+    ).toThrow('Fee cannot be negative');
   });
 
   it('should throw error when fee is greater than totalAmount', () => {
-    expect(() => createDisbursementMock({ fee: 2000 })).toThrow(
-      'Fee cannot be greater than total amount',
-    );
+    expect(
+      () =>
+        new Disbursement({
+          merchantId: 'merchant-123',
+          totalAmount: 1000,
+          fee: 2000,
+        }),
+    ).toThrow('Fee cannot be greater than total amount');
   });
 });
