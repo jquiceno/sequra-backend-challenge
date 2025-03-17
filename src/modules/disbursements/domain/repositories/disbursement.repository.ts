@@ -1,4 +1,4 @@
-import { Disbursement } from '../entities/disbursement.entity';
+import { Disbursement } from '../entities';
 
 export abstract class DisbursementRepository {
   abstract create(disbursement: Disbursement): Promise<string>;
