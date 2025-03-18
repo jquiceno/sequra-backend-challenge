@@ -11,26 +11,24 @@ export class Disbursement {
   readonly reference: string;
 
   constructor(props: { merchantId: string; totalAmount: number; fee: number }) {
-    if (!props.merchantId) {
-      throw new Error('Merchant ID is required');
-    }
+    if (!props.merchantId) throw new Error('Merchant ID is required');
+    if (props.totalAmount == null) throw new Error('Total amount is required');
+    if (props.fee == null) throw new Error('Fee is required');
 
-    const date = new Date();
     const totalAmount = new Amount(props.totalAmount);
     const fee = new Fee(props.fee, totalAmount);
 
-    Object.assign(this, {
-      ...props,
-      id: uuidv4(),
-      totalAmount: totalAmount.getValue(),
-      fee: fee.getValue(),
-      createdAt: date,
-      updatedAt: date,
-      reference: this.generateReference(props.merchantId, date),
-    });
+    const date = new Date();
+    this.id = uuidv4();
+    this.merchantId = props.merchantId;
+    this.totalAmount = totalAmount.getValue();
+    this.fee = fee.getValue();
+    this.createdAt = date;
+    this.updatedAt = date;
+    this.reference = this.generateReference();
   }
 
-  generateReference(merchantId: string, date: Date): string {
-    return `DISB-${merchantId.substring(0, 4).toUpperCase()}-${date.toISOString().split('T')[0]}`;
+  private generateReference(): string {
+    return `DISB-${this.merchantId.substring(0, 4).toUpperCase()}-${this.createdAt.toISOString().split('T')[0]}`;
   }
 }
