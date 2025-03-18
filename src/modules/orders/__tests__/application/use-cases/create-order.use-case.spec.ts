@@ -12,6 +12,8 @@ describe('CreateOrderUseCase', () => {
       findById: jest.fn(),
       findByMerchantId: jest.fn(),
       findAll: jest.fn(),
+      findByMerchantIdAndDateRange: jest.fn(),
+      update: jest.fn(),
     };
 
     useCase = new CreateOrderUseCase(mockOrderRepository);
