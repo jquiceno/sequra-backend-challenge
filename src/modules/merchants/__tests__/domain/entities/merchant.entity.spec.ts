@@ -1,3 +1,4 @@
+import { DisbursementFrequency } from '@modules/merchants/domain/enums';
 import { createMerchantMock } from '../../__mocks__/merchant.mock';
 
 describe('Merchant Entity', () => {
@@ -42,7 +43,7 @@ describe('Merchant Entity', () => {
 
   it('should accept only valid disbursementFrequency values', () => {
     const merchant = createMerchantMock({
-      disbursementFrequency: 'WEEKLY',
+      disbursementFrequency: DisbursementFrequency.WEEKLY,
     });
     expect(merchant.disbursementFrequency).toBe('WEEKLY');
   });

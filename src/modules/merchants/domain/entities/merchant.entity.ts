@@ -1,18 +1,19 @@
 import { v4 as uuidv4 } from 'uuid';
+import { DisbursementFrequency } from '../enums';
 
 export class Merchant {
   readonly id: string;
   readonly reference: string;
   readonly email: string;
   readonly liveOn: Date;
-  readonly disbursementFrequency: 'DAILY' | 'WEEKLY';
+  readonly disbursementFrequency: DisbursementFrequency;
   readonly minimumMonthlyFee: number;
 
   constructor(props: {
     reference: string;
     email: string;
     liveOn: Date;
-    disbursementFrequency: 'DAILY' | 'WEEKLY';
+    disbursementFrequency: DisbursementFrequency;
     minimumMonthlyFee: number;
   }) {
     if (!props.reference) {

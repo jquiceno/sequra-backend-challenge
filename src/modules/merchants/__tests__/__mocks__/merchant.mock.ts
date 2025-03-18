@@ -1,12 +1,13 @@
 import { Merchant } from '@modules/merchants/domain/entities';
+import { DisbursementFrequency } from '@modules/merchants/domain/enums';
+import { v4 as uuidv4 } from 'uuid';
 
-export const createMerchantMock = (
-  props?: Partial<Omit<Merchant, 'id'>>,
-): Merchant => {
+export const createMerchantMock = (props?: Partial<Merchant>): Merchant => {
   return new Merchant({
+    id: uuidv4(),
     reference: 'MERCH-123',
     email: 'merchant@example.com',
-    disbursementFrequency: 'DAILY',
+    disbursementFrequency: DisbursementFrequency.DAILY,
     minimumMonthlyFee: 100,
     liveOn: new Date(),
     ...props,
