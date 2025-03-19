@@ -15,6 +15,7 @@ describe('CreateOrderUseCase', () => {
       findAll: jest.fn(),
       findByMerchantIdAndDateRange: jest.fn(),
       update: jest.fn(),
+      findByMerchantIdAndDateRangeAndStatus: jest.fn(),
     };
 
     useCase = new CreateOrderUseCase(mockOrderRepository);
@@ -107,6 +108,30 @@ describe('CreateOrderUseCase', () => {
     expect(mockOrderRepository.create).not.toHaveBeenCalled();
   });
 
+  it('should throw error when merchantId is undefined', async () => {
+    const createOrderDto = {
+      merchantId: undefined as unknown as string,
+      amount: 1000,
+    };
+
+    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
+      'Merchant ID is required',
+    );
+    expect(mockOrderRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should throw error when merchantId is null', async () => {
+    const createOrderDto = {
+      merchantId: null as unknown as string,
+      amount: 1000,
+    };
+
+    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
+      'Merchant ID is required',
+    );
+    expect(mockOrderRepository.create).not.toHaveBeenCalled();
+  });
+
   it('should throw error when amount is zero', async () => {
     const createOrderDto = {
       merchantId: 'merchant-123',
@@ -127,6 +152,66 @@ describe('CreateOrderUseCase', () => {
 
     await expect(useCase.execute(createOrderDto)).rejects.toThrow(
       'Amount must be greater than 0',
+    );
+    expect(mockOrderRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should throw error when amount is undefined', async () => {
+    const createOrderDto = {
+      merchantId: 'merchant-123',
+      amount: undefined as unknown as number,
+    };
+
+    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
+      'Amount is required',
+    );
+    expect(mockOrderRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should throw error when amount is null', async () => {
+    const createOrderDto = {
+      merchantId: 'merchant-123',
+      amount: null as unknown as number,
+    };
+
+    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
+      'Amount is required',
+    );
+    expect(mockOrderRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should throw error when amount is NaN', async () => {
+    const createOrderDto = {
+      merchantId: 'merchant-123',
+      amount: NaN,
+    };
+
+    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
+      'Amount must be a valid number',
+    );
+    expect(mockOrderRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should throw error when amount is Infinity', async () => {
+    const createOrderDto = {
+      merchantId: 'merchant-123',
+      amount: Infinity,
+    };
+
+    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
+      'Amount must be a valid number',
+    );
+    expect(mockOrderRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should throw error when amount is -Infinity', async () => {
+    const createOrderDto = {
+      merchantId: 'merchant-123',
+      amount: -Infinity,
+    };
+
+    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
+      'Amount must be a valid number',
     );
     expect(mockOrderRepository.create).not.toHaveBeenCalled();
   });
