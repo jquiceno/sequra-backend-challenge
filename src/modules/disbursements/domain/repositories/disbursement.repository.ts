@@ -6,4 +6,6 @@ export abstract class DisbursementRepository {
     merchantId: string,
     date: Date,
   ): Promise<Disbursement | null>;
+  abstract findAll(): Promise<Disbursement[]>;
+  abstract findById(id: string): Promise<Disbursement | null>;
 }
