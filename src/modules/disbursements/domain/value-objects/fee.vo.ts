@@ -1,16 +1,18 @@
-import { Amount } from './amount.vo';
-
 export class Fee {
-  constructor(
-    private readonly value: number,
-    private readonly totalAmount: Amount,
-  ) {
-    if (value < 0) {
+  private readonly value: number;
+  private readonly FEE_RATES = [
+    { max: 50, rate: 0.01 },
+    { max: 300, rate: 0.0095 },
+    { max: Infinity, rate: 0.0085 },
+  ];
+
+  constructor(private readonly totalAmount: number) {
+    if (totalAmount < 0) {
       throw new Error('Fee cannot be negative');
     }
-    if (value > totalAmount.getValue()) {
-      throw new Error('Fee cannot be greater than total amount');
-    }
+
+    const rate = this.FEE_RATES.find((rule) => totalAmount <= rule.max)!.rate;
+    this.value = parseFloat((totalAmount * rate).toFixed(2));
   }
 
   getValue(): number {

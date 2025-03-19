@@ -7,7 +7,6 @@ export const createDisbursementMock = (
     id: '123',
     merchantId: 'merchant-123',
     totalAmount: 1000,
-    fee: 100,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -24,7 +23,6 @@ export const createDisbursementListMock = (count: number): Disbursement[] => {
       id: `123-${index}`,
       merchantId: `merchant-${index}`,
       totalAmount: 1000 + index,
-      fee: 100 + index,
     }),
   );
 };

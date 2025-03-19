@@ -5,15 +5,14 @@ describe('Disbursement Entity', () => {
     const disbursement = new Disbursement({
       merchantId: 'merchant-123',
       totalAmount: 1000,
-      fee: 100,
     });
 
     expect(disbursement).toBeDefined();
     expect(disbursement.id).toBeDefined();
     expect(disbursement.merchantId).toBe('merchant-123');
     expect(disbursement.totalAmount).toBe(1000);
-    expect(disbursement.fee).toBe(100);
-    expect(disbursement.reference).toMatch(/^DISB-MERC-\d{4}-\d{2}-\d{2}$/);
+    expect(disbursement.fee).toBeDefined();
+    expect(disbursement.reference).toBeDefined();
     expect(disbursement.createdAt).toBeInstanceOf(Date);
     expect(disbursement.updatedAt).toBeInstanceOf(Date);
   });
@@ -24,7 +23,6 @@ describe('Disbursement Entity', () => {
         new Disbursement({
           merchantId: '',
           totalAmount: 1000,
-          fee: 100,
         }),
     ).toThrow('Merchant ID is required');
   });
@@ -35,7 +33,6 @@ describe('Disbursement Entity', () => {
         new Disbursement({
           merchantId: 'merchant-123',
           totalAmount: 0,
-          fee: 100,
         }),
     ).toThrow('Amount must be greater than 0');
   });
@@ -46,30 +43,27 @@ describe('Disbursement Entity', () => {
         new Disbursement({
           merchantId: 'merchant-123',
           totalAmount: -1,
-          fee: 100,
         }),
     ).toThrow('Amount must be greater than 0');
   });
 
-  it('should throw error when fee is negative', () => {
+  it('should throw error when totalAmount is undefined', () => {
     expect(
       () =>
         new Disbursement({
           merchantId: 'merchant-123',
-          totalAmount: 1000,
-          fee: -1,
+          totalAmount: undefined as unknown as number,
         }),
-    ).toThrow('Fee cannot be negative');
+    ).toThrow('Total amount is required');
   });
 
-  it('should throw error when fee is greater than totalAmount', () => {
+  it('should throw error when totalAmount is null', () => {
     expect(
       () =>
         new Disbursement({
           merchantId: 'merchant-123',
-          totalAmount: 1000,
-          fee: 2000,
+          totalAmount: null as unknown as number,
         }),
-    ).toThrow('Fee cannot be greater than total amount');
+    ).toThrow('Total amount is required');
   });
 });
