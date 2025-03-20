@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
 import { GetMerchantByIdUseCase } from '../../application/use-cases/get-merchant-by-id.use-case';
 import { Merchant } from '../../domain/entities';
 
@@ -10,6 +10,12 @@ export class GetMerchantByIdController {
 
   @Get(':id')
   async execute(@Param('id') id: string): Promise<Merchant | null> {
-    return this.getMerchantByIdUseCase.execute(id);
+    const merchant = await this.getMerchantByIdUseCase.execute(id);
+
+    if (!merchant) {
+      throw new NotFoundException('Merchant not found');
+    }
+
+    return merchant;
   }
 }
