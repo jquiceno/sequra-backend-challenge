@@ -11,6 +11,8 @@ export class CreateMerchantController {
   async execute(
     @Body() createMerchantDto: CreateMerchantDto,
   ): Promise<Merchant> {
-    return this.createMerchantUseCase.execute(createMerchantDto);
+    const merchant =
+      await this.createMerchantUseCase.execute(createMerchantDto);
+    return merchant.toJSON();
   }
 }

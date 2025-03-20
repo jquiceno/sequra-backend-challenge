@@ -41,4 +41,12 @@ export class Merchant {
   getReference(): string {
     return this.reference.getValue();
   }
+
+  toJSON(): any {
+    return {
+      ...this,
+      email: this.email.getValue(),
+      reference: this.reference.getValue(),
+    };
+  }
 }

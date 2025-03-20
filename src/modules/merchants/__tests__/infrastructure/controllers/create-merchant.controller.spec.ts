@@ -51,7 +51,7 @@ describe('CreateMerchantController', () => {
 
       const result = await controller.execute(createMerchantDto);
 
-      expect(result).toEqual(expectedMerchant);
+      expect(result).toEqual(expectedMerchant.toJSON());
       expect(useCase.execute).toHaveBeenCalledWith(createMerchantDto);
     });
 
@@ -73,7 +73,7 @@ describe('CreateMerchantController', () => {
 
       const result = await controller.execute(createMerchantDto);
 
-      expect(result).toEqual(expectedMerchant);
+      expect(result).toEqual(expectedMerchant.toJSON());
       expect(useCase.execute).toHaveBeenCalledWith(createMerchantDto);
     });
   });
