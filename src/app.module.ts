@@ -1,13 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { DisbursementModule } from './modules/disbursements';
+import { MongooseModule } from '@nestjs/mongoose';
+import { MerchantsModule } from './modules/merchants/merchants.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    DisbursementModule,
+    MongooseModule.forRoot('mongodb://localhost:27017/sequra_db', {
+      autoCreate: true,
+    }),
+    MerchantsModule,
   ],
 })
 export class AppModule {}
