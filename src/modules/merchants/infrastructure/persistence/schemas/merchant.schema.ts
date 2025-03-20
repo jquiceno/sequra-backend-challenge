@@ -1,9 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
 import { DisbursementFrequency } from '../../../domain/enums';
 
 @Schema({ collection: 'merchants' })
-export class MerchantDocument extends Document {
+export class MerchantDocument {
+  @Prop({ required: true, unique: true })
+  id: string;
+
   @Prop({ required: true, unique: true })
   reference: string;
 

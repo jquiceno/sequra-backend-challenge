@@ -41,7 +41,6 @@ describe('CreateMerchantController', () => {
       };
 
       const expectedMerchant = createMerchantMock({
-        reference: createMerchantDto.reference,
         email: createMerchantDto.email,
         disbursementFrequency: createMerchantDto.disbursementFrequency,
         minimumMonthlyFee: createMerchantDto.minimumMonthlyFee,
@@ -65,7 +64,6 @@ describe('CreateMerchantController', () => {
       };
 
       const expectedMerchant = createMerchantMock({
-        reference: createMerchantDto.reference,
         email: createMerchantDto.email,
         disbursementFrequency: createMerchantDto.disbursementFrequency,
         minimumMonthlyFee: createMerchantDto.minimumMonthlyFee,

@@ -15,18 +15,24 @@ export class MongoMerchantRepository implements MerchantRepository {
 
   async create(merchant: Merchant): Promise<Merchant> {
     const createdMerchant = await this.merchantModel.create({
-      reference: merchant.reference,
-      email: merchant.email,
-      liveOn: merchant.liveOn,
+      id: merchant.id,
+      reference: merchant.getReference(),
+      email: merchant.getEmail(),
       disbursementFrequency: merchant.disbursementFrequency,
       minimumMonthlyFee: merchant.minimumMonthlyFee,
+      liveOn: merchant.liveOn,
     });
 
     return this.toEntity(createdMerchant);
   }
 
   async findById(id: string): Promise<Merchant | null> {
-    const merchant = await this.merchantModel.findById(id);
+    const merchant = await this.merchantModel.findOne({ id });
+    return merchant ? this.toEntity(merchant) : null;
+  }
+
+  async findByReference(reference: string): Promise<Merchant | null> {
+    const merchant = await this.merchantModel.findOne({ reference });
     return merchant ? this.toEntity(merchant) : null;
   }
 
@@ -42,7 +48,7 @@ export class MongoMerchantRepository implements MerchantRepository {
 
   private toEntity(document: MerchantDocument): Merchant {
     return new Merchant({
-      reference: document.reference,
+      id: document.id,
       email: document.email,
       liveOn: document.liveOn,
       disbursementFrequency: document.disbursementFrequency,

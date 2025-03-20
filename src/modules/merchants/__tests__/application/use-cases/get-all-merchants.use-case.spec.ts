@@ -12,7 +12,6 @@ describe('GetAllMerchantsUseCase', () => {
       findAll: jest.fn(),
       findById: jest.fn(),
       create: jest.fn(),
-      findByReference: jest.fn(),
       findByEmail: jest.fn(),
     };
 
@@ -24,17 +23,15 @@ describe('GetAllMerchantsUseCase', () => {
   });
 
   describe('execute', () => {
-    it('should return all merchants', async () => {
+    it('should return all merchants successfully', async () => {
       const mockMerchants: Merchant[] = [
         new Merchant({
-          reference: 'REF001',
           email: 'test1@example.com',
           liveOn: new Date(),
           disbursementFrequency: DisbursementFrequency.DAILY,
           minimumMonthlyFee: 100,
         }),
         new Merchant({
-          reference: 'REF002',
           email: 'test2@example.com',
           liveOn: new Date(),
           disbursementFrequency: DisbursementFrequency.WEEKLY,
@@ -47,7 +44,26 @@ describe('GetAllMerchantsUseCase', () => {
       const result = await useCase.execute();
 
       expect(result).toEqual(mockMerchants);
-      expect(mockMerchantRepository.findAll).toHaveBeenCalled();
+      expect(mockMerchantRepository.findAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return empty array when no merchants exist', async () => {
+      mockMerchantRepository.findAll.mockResolvedValue([]);
+
+      const result = await useCase.execute();
+
+      expect(result).toEqual([]);
+      expect(mockMerchantRepository.findAll).toHaveBeenCalledTimes(1);
+    });
+
+    it('should throw an error when repository fails', async () => {
+      const error = new Error('Database connection failed');
+      mockMerchantRepository.findAll.mockRejectedValue(error);
+
+      await expect(useCase.execute()).rejects.toThrow(
+        'Database connection failed',
+      );
+      expect(mockMerchantRepository.findAll).toHaveBeenCalledTimes(1);
     });
   });
 });

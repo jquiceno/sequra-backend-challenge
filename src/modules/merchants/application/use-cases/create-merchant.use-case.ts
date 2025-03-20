@@ -7,13 +7,10 @@ export class CreateMerchantUseCase {
 
   async execute(createMerchantDto: CreateMerchantDto): Promise<Merchant> {
     const merchant = new Merchant({
-      reference: createMerchantDto.reference,
       email: createMerchantDto.email,
       disbursementFrequency: createMerchantDto.disbursementFrequency,
       minimumMonthlyFee: createMerchantDto.minimumMonthlyFee,
-      liveOn: createMerchantDto.liveOn
-        ? new Date(createMerchantDto.liveOn)
-        : new Date(),
+      liveOn: new Date(),
     });
 
     return this.merchantRepository.create(merchant);
