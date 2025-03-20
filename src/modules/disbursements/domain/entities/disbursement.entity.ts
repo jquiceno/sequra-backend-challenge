@@ -10,7 +10,7 @@ export class Disbursement {
   readonly updatedAt: Date;
   readonly reference: Reference;
 
-  constructor(props: { merchantId: string; totalAmount: number }) {
+  constructor(props: { id?: string; merchantId: string; totalAmount: number }) {
     if (!props.merchantId) throw new Error('Merchant ID is required');
     if (props.totalAmount == null) throw new Error('Total amount is required');
 
@@ -19,7 +19,7 @@ export class Disbursement {
     const reference = new Reference(props.merchantId, new Date());
 
     const date = new Date();
-    this.id = uuidv4();
+    this.id = props.id ?? uuidv4();
     this.merchantId = props.merchantId;
     this.totalAmount = totalAmount.getValue();
     this.fee = fee;

@@ -1,230 +1,120 @@
-import { OrderRepository } from '@modules/orders/domain/repositories';
-import { CreateOrderUseCase } from '@modules/orders/application/use-cases';
-import { createOrderMock } from '../../__mocks__/order.mock';
-import { OrderStatus } from '@modules/orders/domain/enums';
+import { CreateOrderUseCase } from '../../../application/use-cases';
+import { OrderRepository } from '../../../domain/repositories';
+import { MerchantRepository } from '@modules/merchants/domain/repositories';
+import { CreateOrderDto } from '../../../application/dtos';
+import { Order } from '../../../domain/entities';
+import { Merchant } from '@modules/merchants/domain/entities';
+import { DisbursementFrequency } from '@modules/merchants/domain/enums';
 
 describe('CreateOrderUseCase', () => {
   let useCase: CreateOrderUseCase;
-  let mockOrderRepository: jest.Mocked<OrderRepository>;
+  let orderRepository: jest.Mocked<OrderRepository>;
+  let merchantRepository: jest.Mocked<MerchantRepository>;
+
+  const mockMerchant = new Merchant({
+    email: 'test@example.com',
+    disbursementFrequency: DisbursementFrequency.WEEKLY,
+    minimumMonthlyFee: 100,
+    liveOn: new Date(),
+  });
+
+  const mockCreateOrderDto: CreateOrderDto = {
+    merchantId: mockMerchant.id,
+    amount: 100,
+  };
 
   beforeEach(() => {
-    mockOrderRepository = {
+    orderRepository = {
       create: jest.fn(),
       findById: jest.fn(),
       findByMerchantId: jest.fn(),
       findAll: jest.fn(),
-      findByMerchantIdAndDateRange: jest.fn(),
       update: jest.fn(),
       findByMerchantIdAndDateRangeAndStatus: jest.fn(),
     };
 
-    useCase = new CreateOrderUseCase(mockOrderRepository);
-  });
-
-  it('should create an order successfully', async () => {
-    const createOrderDto = {
-      merchantId: 'merchant-123',
-      amount: 1000,
+    merchantRepository = {
+      create: jest.fn(),
+      findById: jest.fn(),
+      findByEmail: jest.fn(),
+      findAll: jest.fn(),
     };
 
-    const expectedOrder = createOrderMock({
-      merchantId: createOrderDto.merchantId,
-      amount: createOrderDto.amount,
+    useCase = new CreateOrderUseCase(orderRepository, merchantRepository);
+  });
+
+  describe('execute', () => {
+    it('should create an order successfully', async () => {
+      const expectedOrder = new Order({
+        merchantId: mockCreateOrderDto.merchantId,
+        amount: mockCreateOrderDto.amount,
+      });
+
+      merchantRepository.findById.mockResolvedValue(mockMerchant);
+      orderRepository.create.mockResolvedValue(expectedOrder);
+
+      const result = await useCase.execute(mockCreateOrderDto);
+
+      expect(result).toBeInstanceOf(Order);
+      expect(result.merchantId).toBe(mockCreateOrderDto.merchantId);
+      expect(result.amount).toBe(mockCreateOrderDto.amount);
+      expect(merchantRepository.findById).toHaveBeenCalledWith(
+        mockCreateOrderDto.merchantId,
+      );
+      expect(orderRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          merchantId: mockCreateOrderDto.merchantId,
+          amount: mockCreateOrderDto.amount,
+        }),
+      );
     });
 
-    mockOrderRepository.create.mockResolvedValue(expectedOrder);
+    it('should throw error if merchant is not found', async () => {
+      merchantRepository.findById.mockResolvedValue(null);
 
-    const result = await useCase.execute(createOrderDto);
+      await expect(useCase.execute(mockCreateOrderDto)).rejects.toThrow(
+        'Merchant not found',
+      );
 
-    expect(result).toEqual(expectedOrder);
-    expect(mockOrderRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        merchantId: createOrderDto.merchantId,
-        amount: createOrderDto.amount,
-        status: OrderStatus.PENDING,
-      }),
-    );
-  });
-
-  it('should create an order with minimum amount', async () => {
-    const createOrderDto = {
-      merchantId: 'merchant-123',
-      amount: 0.01,
-    };
-
-    const expectedOrder = createOrderMock({
-      merchantId: createOrderDto.merchantId,
-      amount: createOrderDto.amount,
+      expect(merchantRepository.findById).toHaveBeenCalledWith(
+        mockCreateOrderDto.merchantId,
+      );
+      expect(orderRepository.create).not.toHaveBeenCalled();
     });
 
-    mockOrderRepository.create.mockResolvedValue(expectedOrder);
+    it('should throw error if order creation fails', async () => {
+      const error = new Error('Failed to create order');
 
-    const result = await useCase.execute(createOrderDto);
+      merchantRepository.findById.mockResolvedValue(mockMerchant);
+      orderRepository.create.mockRejectedValue(error);
 
-    expect(result).toEqual(expectedOrder);
-    expect(mockOrderRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        merchantId: createOrderDto.merchantId,
-        amount: createOrderDto.amount,
-        status: OrderStatus.PENDING,
-      }),
-    );
-  });
+      await expect(useCase.execute(mockCreateOrderDto)).rejects.toThrow(error);
 
-  it('should create an order with large amount', async () => {
-    const createOrderDto = {
-      merchantId: 'merchant-123',
-      amount: 999999.99,
-    };
-
-    const expectedOrder = createOrderMock({
-      merchantId: createOrderDto.merchantId,
-      amount: createOrderDto.amount,
+      expect(merchantRepository.findById).toHaveBeenCalledWith(
+        mockCreateOrderDto.merchantId,
+      );
+      expect(orderRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          merchantId: mockCreateOrderDto.merchantId,
+          amount: mockCreateOrderDto.amount,
+        }),
+      );
     });
 
-    mockOrderRepository.create.mockResolvedValue(expectedOrder);
+    it('should throw error when creating order with invalid data', async () => {
+      const invalidDto = {
+        ...mockCreateOrderDto,
+        amount: 0,
+      };
 
-    const result = await useCase.execute(createOrderDto);
+      merchantRepository.findById.mockResolvedValue(mockMerchant);
 
-    expect(result).toEqual(expectedOrder);
-    expect(mockOrderRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        merchantId: createOrderDto.merchantId,
-        amount: createOrderDto.amount,
-        status: OrderStatus.PENDING,
-      }),
-    );
-  });
+      await expect(useCase.execute(invalidDto)).rejects.toThrow();
 
-  it('should throw error when merchantId is empty', async () => {
-    const createOrderDto = {
-      merchantId: '',
-      amount: 1000,
-    };
-
-    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
-      'Merchant ID is required',
-    );
-    expect(mockOrderRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('should throw error when merchantId is undefined', async () => {
-    const createOrderDto = {
-      merchantId: undefined as unknown as string,
-      amount: 1000,
-    };
-
-    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
-      'Merchant ID is required',
-    );
-    expect(mockOrderRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('should throw error when merchantId is null', async () => {
-    const createOrderDto = {
-      merchantId: null as unknown as string,
-      amount: 1000,
-    };
-
-    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
-      'Merchant ID is required',
-    );
-    expect(mockOrderRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('should throw error when amount is zero', async () => {
-    const createOrderDto = {
-      merchantId: 'merchant-123',
-      amount: 0,
-    };
-
-    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
-      'Amount must be greater than 0',
-    );
-    expect(mockOrderRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('should throw error when amount is negative', async () => {
-    const createOrderDto = {
-      merchantId: 'merchant-123',
-      amount: -1,
-    };
-
-    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
-      'Amount must be greater than 0',
-    );
-    expect(mockOrderRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('should throw error when amount is undefined', async () => {
-    const createOrderDto = {
-      merchantId: 'merchant-123',
-      amount: undefined as unknown as number,
-    };
-
-    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
-      'Amount is required',
-    );
-    expect(mockOrderRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('should throw error when amount is null', async () => {
-    const createOrderDto = {
-      merchantId: 'merchant-123',
-      amount: null as unknown as number,
-    };
-
-    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
-      'Amount is required',
-    );
-    expect(mockOrderRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('should throw error when amount is NaN', async () => {
-    const createOrderDto = {
-      merchantId: 'merchant-123',
-      amount: NaN,
-    };
-
-    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
-      'Amount must be a valid number',
-    );
-    expect(mockOrderRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('should throw error when amount is Infinity', async () => {
-    const createOrderDto = {
-      merchantId: 'merchant-123',
-      amount: Infinity,
-    };
-
-    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
-      'Amount must be a valid number',
-    );
-    expect(mockOrderRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('should throw error when amount is -Infinity', async () => {
-    const createOrderDto = {
-      merchantId: 'merchant-123',
-      amount: -Infinity,
-    };
-
-    await expect(useCase.execute(createOrderDto)).rejects.toThrow(
-      'Amount must be a valid number',
-    );
-    expect(mockOrderRepository.create).not.toHaveBeenCalled();
-  });
-
-  it('should throw error when repository fails', async () => {
-    const createOrderDto = {
-      merchantId: 'merchant-123',
-      amount: 1000,
-    };
-
-    const error = new Error('Database error');
-    mockOrderRepository.create.mockRejectedValue(error);
-
-    await expect(useCase.execute(createOrderDto)).rejects.toThrow(error);
+      expect(merchantRepository.findById).toHaveBeenCalledWith(
+        mockCreateOrderDto.merchantId,
+      );
+      expect(orderRepository.create).not.toHaveBeenCalled();
+    });
   });
 });

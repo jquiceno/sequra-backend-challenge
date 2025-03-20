@@ -57,6 +57,7 @@ import {
     GetAllMerchantsUseCase,
     GetMerchantByIdUseCase,
     CreateMerchantUseCase,
+    MerchantRepository,
   ],
 })
 export class MerchantsModule {}

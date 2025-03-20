@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { MerchantsModule } from './modules/merchants/merchants.module';
 import { ResponseInterceptor } from './infrastructure/interceptors';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { OrdersModule } from '@modules/orders/orders.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
       autoCreate: true,
     }),
     MerchantsModule,
+    OrdersModule,
   ],
   providers: [
     {
