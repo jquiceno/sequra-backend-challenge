@@ -31,18 +31,17 @@ export class MongoMerchantRepository implements MerchantRepository {
     return merchant ? this.toEntity(merchant) : null;
   }
 
-  async findByReference(reference: string): Promise<Merchant | null> {
-    const merchant = await this.merchantModel.findOne({ reference });
-    return merchant ? this.toEntity(merchant) : null;
-  }
-
   async findByEmail(email: string): Promise<Merchant | null> {
     const merchant = await this.merchantModel.findOne({ email });
     return merchant ? this.toEntity(merchant) : null;
   }
 
   async findAll(): Promise<Merchant[]> {
-    const merchants = await this.merchantModel.find();
+    const merchants = await this.merchantModel.find(
+      {},
+      {},
+      { sort: { liveOn: -1 } },
+    );
     return merchants.map((merchant) => this.toEntity(merchant));
   }
 

@@ -6,7 +6,7 @@ export class MerchantDocument {
   @Prop({ required: true, unique: true })
   id: string;
 
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   reference: string;
 
   @Prop({ required: true, unique: true })

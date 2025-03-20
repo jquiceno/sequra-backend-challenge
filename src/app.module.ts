@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MerchantsModule } from './modules/merchants/merchants.module';
+import { ResponseInterceptor } from './infrastructure/interceptors';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -12,6 +14,12 @@ import { MerchantsModule } from './modules/merchants/merchants.module';
       autoCreate: true,
     }),
     MerchantsModule,
+  ],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ResponseInterceptor,
+    },
   ],
 })
 export class AppModule {}
