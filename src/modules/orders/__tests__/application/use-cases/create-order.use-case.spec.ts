@@ -38,6 +38,7 @@ describe('CreateOrderUseCase', () => {
       findById: jest.fn(),
       findByEmail: jest.fn(),
       findAll: jest.fn(),
+      findByDisbursementFrequency: jest.fn(),
     };
 
     useCase = new CreateOrderUseCase(orderRepository, merchantRepository);

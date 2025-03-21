@@ -5,6 +5,7 @@ import { Model } from 'mongoose';
 import { Merchant } from '../../domain/entities';
 import { MerchantRepository } from '../../domain/repositories';
 import { MerchantDocument } from '../persistence/schemas';
+import { DisbursementFrequency } from '../../domain/enums';
 
 @Injectable()
 export class MongoMerchantRepository implements MerchantRepository {
@@ -42,6 +43,15 @@ export class MongoMerchantRepository implements MerchantRepository {
       {},
       { sort: { liveOn: -1 } },
     );
+    return merchants.map((merchant) => this.toEntity(merchant));
+  }
+
+  async findByDisbursementFrequency(
+    frequency: DisbursementFrequency,
+  ): Promise<Merchant[]> {
+    const merchants = await this.merchantModel.find({
+      disbursementFrequency: frequency,
+    });
     return merchants.map((merchant) => this.toEntity(merchant));
   }
 

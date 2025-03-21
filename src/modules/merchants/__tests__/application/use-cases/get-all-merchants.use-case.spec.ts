@@ -13,6 +13,7 @@ describe('GetAllMerchantsUseCase', () => {
       findById: jest.fn(),
       create: jest.fn(),
       findByEmail: jest.fn(),
+      findByDisbursementFrequency: jest.fn(),
     };
 
     useCase = new GetAllMerchantsUseCase(mockMerchantRepository);
