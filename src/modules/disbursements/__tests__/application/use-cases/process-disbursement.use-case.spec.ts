@@ -3,12 +3,19 @@ import { DisbursementRepository } from '@modules/disbursements/domain/repositori
 import { ProcessDisbursementUseCase } from '@modules/disbursements/application/use-cases';
 import { createOrderMock } from '@modules/orders/__tests__/__mocks__/order.mock';
 import { OrderStatus } from '@modules/orders/domain/enums';
+import { MerchantRepository } from '@modules/merchants/domain/repositories';
+import { createMerchantMock } from '@modules/merchants/__tests__/__mocks__/merchant.mock';
+import { DisbursementFrequency } from '@modules/merchants/domain/enums';
 import { createDisbursementMock } from '../../__mocks__/disbursement.mock';
+import { GetDateRangesByFrequencyStrategy } from '@modules/disbursements/domain/strategies/get-date-ranges-by-frequency.strategy';
 
 describe('ProcessDisbursementUseCase', () => {
   let useCase: ProcessDisbursementUseCase;
   let mockOrderRepository: jest.Mocked<OrderRepository>;
   let mockDisbursementRepository: jest.Mocked<DisbursementRepository>;
+  let mockMerchantRepository: jest.Mocked<MerchantRepository>;
+  let dateRangesStrategy: jest.Mocked<GetDateRangesByFrequencyStrategy>;
+  let dateRange: { startDate: Date; endDate: Date };
 
   beforeEach(() => {
     mockOrderRepository = {
@@ -27,95 +34,165 @@ describe('ProcessDisbursementUseCase', () => {
       findByMerchantAndDate: jest.fn(),
     };
 
+    mockMerchantRepository = {
+      create: jest.fn(),
+      findById: jest.fn(),
+      findByEmail: jest.fn(),
+      findAll: jest.fn(),
+      findByDisbursementFrequency: jest.fn(),
+    };
+
+    dateRange = {
+      startDate: new Date('2024-03-10'),
+      endDate: new Date('2024-03-11'),
+    };
+
+    dateRangesStrategy = {
+      execute: jest.fn().mockReturnValue(dateRange),
+    } as any;
+
     useCase = new ProcessDisbursementUseCase(
       mockOrderRepository,
       mockDisbursementRepository,
+      mockMerchantRepository,
+      dateRangesStrategy,
     );
   });
 
-  it('should process disbursement successfully', async () => {
-    const merchantId = 'merchant-123';
-    const startDate = new Date('2024-01-01');
-    const endDate = new Date('2024-01-31');
+  describe('Daily disbursements', () => {
+    it('should process daily disbursements successfully', async () => {
+      const merchant = createMerchantMock({
+        disbursementFrequency: DisbursementFrequency.DAILY,
+      });
 
-    const pendingOrders = [
-      createOrderMock({ merchantId, amount: 100 }),
-      createOrderMock({ merchantId, amount: 200 }),
-    ];
+      const pendingOrders = [
+        createOrderMock({ merchantId: merchant.id, amount: 100 }),
+        createOrderMock({ merchantId: merchant.id, amount: 200 }),
+      ];
 
-    const mockDisbursement = createDisbursementMock({
-      merchantId,
-      totalAmount: 300,
-    });
+      mockMerchantRepository.findByDisbursementFrequency.mockResolvedValue([
+        merchant,
+      ]);
+      mockOrderRepository.findByMerchantIdAndDateRangeAndStatus.mockResolvedValue(
+        pendingOrders,
+      );
+      mockDisbursementRepository.create.mockImplementation((disbursement) =>
+        Promise.resolve(disbursement),
+      );
+      mockOrderRepository.update.mockImplementation((order) =>
+        Promise.resolve(order),
+      );
 
-    mockOrderRepository.findByMerchantIdAndDateRangeAndStatus.mockResolvedValue(
-      pendingOrders,
-    );
-    mockDisbursementRepository.create.mockResolvedValue(mockDisbursement);
-    mockOrderRepository.update.mockImplementation((order) =>
-      Promise.resolve(order),
-    );
+      const result = await useCase.execute(DisbursementFrequency.DAILY);
 
-    const result = await useCase.execute({
-      merchantId,
-      startDate,
-      endDate,
-    });
-
-    expect(result).toEqual(mockDisbursement);
-    expect(
-      mockOrderRepository.findByMerchantIdAndDateRangeAndStatus,
-    ).toHaveBeenCalledWith(merchantId, startDate, endDate, OrderStatus.PENDING);
-    expect(mockDisbursementRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        merchantId,
-        totalAmount: 300,
-      }),
-    );
-    expect(mockOrderRepository.update).toHaveBeenCalledTimes(2);
-    pendingOrders.forEach((order) => {
-      expect(mockOrderRepository.update).toHaveBeenCalledWith(
+      expect(result).toHaveLength(1);
+      expect(
+        mockMerchantRepository.findByDisbursementFrequency,
+      ).toHaveBeenCalledWith(DisbursementFrequency.DAILY);
+      expect(
+        mockOrderRepository.findByMerchantIdAndDateRangeAndStatus,
+      ).toHaveBeenCalledWith(
+        merchant.id,
+        expect.any(Date),
+        expect.any(Date),
+        OrderStatus.PENDING,
+      );
+      expect(mockDisbursementRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: order.id,
-          status: OrderStatus.DISBURSED,
+          merchantId: merchant.id,
+          totalAmount: expect.objectContaining({
+            value: 300,
+          }),
         }),
       );
+      expect(mockOrderRepository.update).toHaveBeenCalledTimes(2);
+      pendingOrders.forEach((order) => {
+        expect(mockOrderRepository.update).toHaveBeenCalledWith(
+          expect.objectContaining({
+            id: order.id,
+            status: OrderStatus.DISBURSED,
+          }),
+        );
+      });
+    });
+
+    it('should skip merchants with no pending orders', async () => {
+      const merchant = createMerchantMock({
+        disbursementFrequency: DisbursementFrequency.DAILY,
+      });
+
+      mockMerchantRepository.findByDisbursementFrequency.mockResolvedValue([
+        merchant,
+      ]);
+      mockOrderRepository.findByMerchantIdAndDateRangeAndStatus.mockResolvedValue(
+        [],
+      );
+
+      const result = await useCase.execute(DisbursementFrequency.DAILY);
+
+      expect(result).toHaveLength(0);
+      expect(mockDisbursementRepository.create).not.toHaveBeenCalled();
+      expect(mockOrderRepository.update).not.toHaveBeenCalled();
     });
   });
 
-  it('should return null when no pending orders found', async () => {
-    const merchantId = 'merchant-123';
-    const startDate = new Date('2024-01-01');
-    const endDate = new Date('2024-01-31');
+  describe('Weekly disbursements', () => {
+    it('should process weekly disbursements successfully', async () => {
+      const merchant = createMerchantMock({
+        disbursementFrequency: DisbursementFrequency.WEEKLY,
+      });
 
-    mockOrderRepository.findByMerchantIdAndDateRangeAndStatus.mockResolvedValue(
-      [],
+      const pendingOrders = [
+        createOrderMock({ merchantId: merchant.id, amount: 100 }),
+        createOrderMock({ merchantId: merchant.id, amount: 200 }),
+      ];
+
+      mockMerchantRepository.findByDisbursementFrequency.mockResolvedValue([
+        merchant,
+      ]);
+      mockOrderRepository.findByMerchantIdAndDateRangeAndStatus.mockResolvedValue(
+        pendingOrders,
+      );
+      mockDisbursementRepository.create.mockImplementation((disbursement) =>
+        Promise.resolve(disbursement),
+      );
+      mockOrderRepository.update.mockImplementation((order) =>
+        Promise.resolve(order),
+      );
+
+      const result = await useCase.execute(DisbursementFrequency.WEEKLY);
+
+      expect(result).toHaveLength(1);
+      expect(
+        mockMerchantRepository.findByDisbursementFrequency,
+      ).toHaveBeenCalledWith(DisbursementFrequency.WEEKLY);
+      expect(
+        mockOrderRepository.findByMerchantIdAndDateRangeAndStatus,
+      ).toHaveBeenCalledWith(
+        merchant.id,
+        expect.any(Date),
+        expect.any(Date),
+        OrderStatus.PENDING,
+      );
+      expect(mockDisbursementRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          merchantId: merchant.id,
+          totalAmount: expect.objectContaining({
+            value: 300,
+          }),
+        }),
+      );
+      expect(mockOrderRepository.update).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('should handle repository errors gracefully', async () => {
+    const error = new Error('Database error');
+    mockMerchantRepository.findByDisbursementFrequency.mockRejectedValue(error);
+
+    await expect(useCase.execute(DisbursementFrequency.DAILY)).rejects.toThrow(
+      error,
     );
-
-    const result = await useCase.execute({
-      merchantId,
-      startDate,
-      endDate,
-    });
-
-    expect(result).toBeNull();
-    expect(mockDisbursementRepository.create).not.toHaveBeenCalled();
-    expect(mockOrderRepository.update).not.toHaveBeenCalled();
-  });
-
-  it('should throw error when endDate is before startDate', async () => {
-    const merchantId = 'merchant-123';
-    const startDate = new Date('2024-01-31');
-    const endDate = new Date('2024-01-01');
-
-    await expect(
-      useCase.execute({
-        merchantId,
-        startDate,
-        endDate,
-      }),
-    ).rejects.toThrow('End date must be after start date');
-
     expect(
       mockOrderRepository.findByMerchantIdAndDateRangeAndStatus,
     ).not.toHaveBeenCalled();
@@ -123,77 +200,103 @@ describe('ProcessDisbursementUseCase', () => {
     expect(mockOrderRepository.update).not.toHaveBeenCalled();
   });
 
-  it('should throw error when repository fails to find orders', async () => {
-    const merchantId = 'merchant-123';
-    const startDate = new Date('2024-01-01');
-    const endDate = new Date('2024-01-31');
-    const error = new Error('Database error');
+  it('should process disbursements for merchants with pending orders', async () => {
+    const merchant = createMerchantMock();
+    const orders = [
+      createOrderMock({ amount: 100 }),
+      createOrderMock({ amount: 200 }),
+    ];
+    const disbursement = createDisbursementMock({
+      merchantId: merchant.id,
+      totalAmount: 300,
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate,
+    });
 
-    mockOrderRepository.findByMerchantIdAndDateRangeAndStatus.mockRejectedValue(
-      error,
+    mockMerchantRepository.findByDisbursementFrequency.mockResolvedValue([
+      merchant,
+    ]);
+    mockOrderRepository.findByMerchantIdAndDateRangeAndStatus.mockResolvedValue(
+      orders,
+    );
+    mockDisbursementRepository.create.mockResolvedValue(disbursement);
+    mockOrderRepository.update.mockImplementation((order) =>
+      Promise.resolve(order),
     );
 
-    await expect(
-      useCase.execute({
-        merchantId,
-        startDate,
-        endDate,
-      }),
-    ).rejects.toThrow(error);
+    const result = await useCase.execute(DisbursementFrequency.DAILY);
 
+    expect(
+      mockMerchantRepository.findByDisbursementFrequency,
+    ).toHaveBeenCalledWith(DisbursementFrequency.DAILY);
+    expect(dateRangesStrategy.execute).toHaveBeenCalledWith(
+      DisbursementFrequency.DAILY,
+    );
+    expect(
+      mockOrderRepository.findByMerchantIdAndDateRangeAndStatus,
+    ).toHaveBeenCalledWith(
+      merchant.id,
+      dateRange.startDate,
+      dateRange.endDate,
+      OrderStatus.PENDING,
+    );
+
+    const createCall = mockDisbursementRepository.create.mock.calls[0][0];
+    expect(createCall).toBeDefined();
+    expect(createCall.startDate).toEqual(dateRange.startDate);
+    expect(createCall.endDate).toEqual(dateRange.endDate);
+
+    expect(mockOrderRepository.update).toHaveBeenCalledTimes(2);
+    expect(result).toEqual([disbursement]);
+  });
+
+  it('should skip merchants without pending orders', async () => {
+    const merchant = createMerchantMock();
+
+    mockMerchantRepository.findByDisbursementFrequency.mockResolvedValue([
+      merchant,
+    ]);
+    mockOrderRepository.findByMerchantIdAndDateRangeAndStatus.mockResolvedValue(
+      [],
+    );
+
+    const result = await useCase.execute(DisbursementFrequency.WEEKLY);
+
+    expect(
+      mockMerchantRepository.findByDisbursementFrequency,
+    ).toHaveBeenCalledWith(DisbursementFrequency.WEEKLY);
+    expect(dateRangesStrategy.execute).toHaveBeenCalledWith(
+      DisbursementFrequency.WEEKLY,
+    );
+    expect(
+      mockOrderRepository.findByMerchantIdAndDateRangeAndStatus,
+    ).toHaveBeenCalledWith(
+      merchant.id,
+      dateRange.startDate,
+      dateRange.endDate,
+      OrderStatus.PENDING,
+    );
     expect(mockDisbursementRepository.create).not.toHaveBeenCalled();
     expect(mockOrderRepository.update).not.toHaveBeenCalled();
+    expect(result).toEqual([]);
   });
 
-  it('should throw error when repository fails to create disbursement', async () => {
-    const merchantId = 'merchant-123';
-    const startDate = new Date('2024-01-01');
-    const endDate = new Date('2024-01-31');
+  it('should return empty array when no merchants found', async () => {
+    mockMerchantRepository.findByDisbursementFrequency.mockResolvedValue([]);
 
-    const pendingOrders = [createOrderMock({ merchantId, amount: 100 })];
-    const error = new Error('Database error');
+    const result = await useCase.execute(DisbursementFrequency.DAILY);
 
-    mockOrderRepository.findByMerchantIdAndDateRangeAndStatus.mockResolvedValue(
-      pendingOrders,
+    expect(
+      mockMerchantRepository.findByDisbursementFrequency,
+    ).toHaveBeenCalledWith(DisbursementFrequency.DAILY);
+    expect(dateRangesStrategy.execute).toHaveBeenCalledWith(
+      DisbursementFrequency.DAILY,
     );
-    mockDisbursementRepository.create.mockRejectedValue(error);
-
-    await expect(
-      useCase.execute({
-        merchantId,
-        startDate,
-        endDate,
-      }),
-    ).rejects.toThrow(error);
-
+    expect(
+      mockOrderRepository.findByMerchantIdAndDateRangeAndStatus,
+    ).not.toHaveBeenCalled();
+    expect(mockDisbursementRepository.create).not.toHaveBeenCalled();
     expect(mockOrderRepository.update).not.toHaveBeenCalled();
-  });
-
-  it('should throw error when repository fails to update order', async () => {
-    const merchantId = 'merchant-123';
-    const startDate = new Date('2024-01-01');
-    const endDate = new Date('2024-01-31');
-
-    const pendingOrders = [createOrderMock({ merchantId, amount: 100 })];
-    const error = new Error('Database error');
-
-    mockOrderRepository.findByMerchantIdAndDateRangeAndStatus.mockResolvedValue(
-      pendingOrders,
-    );
-    mockDisbursementRepository.create.mockResolvedValue(
-      createDisbursementMock({
-        merchantId,
-        totalAmount: 100,
-      }),
-    );
-    mockOrderRepository.update.mockRejectedValue(error);
-
-    await expect(
-      useCase.execute({
-        merchantId,
-        startDate,
-        endDate,
-      }),
-    ).rejects.toThrow(error);
+    expect(result).toEqual([]);
   });
 });
