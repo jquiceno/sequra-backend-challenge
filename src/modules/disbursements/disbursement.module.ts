@@ -13,6 +13,13 @@ import {
 } from './application/use-cases';
 import { OrdersModule } from '@modules/orders/orders.module';
 import { OrderRepository } from '@modules/orders/domain/repositories';
+import { MerchantsModule } from '@modules/merchants/merchants.module';
+import { MerchantRepository } from '@modules/merchants/domain/repositories';
+import { GetDateRangesByFrequencyStrategy } from './domain/strategies/get-date-ranges-by-frequency.strategy';
+import {
+  CalculateDailyDatesRangesService,
+  CalculateWeeklyDatesRangesService,
+} from './domain/services';
 
 @Module({
   imports: [
@@ -23,6 +30,7 @@ import { OrderRepository } from '@modules/orders/domain/repositories';
       },
     ]),
     OrdersModule,
+    MerchantsModule,
   ],
   providers: [
     {
@@ -44,14 +52,33 @@ import { OrderRepository } from '@modules/orders/domain/repositories';
       inject: [DisbursementRepository],
     },
     {
+      provide: GetDateRangesByFrequencyStrategy,
+      useClass: GetDateRangesByFrequencyStrategy,
+    },
+    {
+      provide: CalculateDailyDatesRangesService,
+      useClass: CalculateDailyDatesRangesService,
+    },
+    {
+      provide: CalculateWeeklyDatesRangesService,
+      useClass: CalculateWeeklyDatesRangesService,
+    },
+    {
       provide: ProcessDisbursementUseCase,
       useFactory: (
         repository: DisbursementRepository,
         orderRepository: OrderRepository,
+        merchantRepository: MerchantRepository,
+        dateRangesStrategy: GetDateRangesByFrequencyStrategy,
       ) => {
-        return new ProcessDisbursementUseCase(orderRepository, repository);
+        return new ProcessDisbursementUseCase(
+          orderRepository,
+          repository,
+          merchantRepository,
+          dateRangesStrategy,
+        );
       },
-      inject: [DisbursementRepository, OrderRepository],
+      inject: [DisbursementRepository, OrderRepository, MerchantRepository],
     },
   ],
   exports: [
