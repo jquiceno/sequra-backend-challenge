@@ -20,6 +20,7 @@ import {
   CalculateDailyDatesRangesService,
   CalculateWeeklyDatesRangesService,
 } from './domain/services';
+import { ProcessDisbursementCommand } from './infrastructure/commands';
 
 @Module({
   imports: [
@@ -53,7 +54,19 @@ import {
     },
     {
       provide: GetDateRangesByFrequencyStrategy,
-      useClass: GetDateRangesByFrequencyStrategy,
+      useFactory: (
+        dailyService: CalculateDailyDatesRangesService,
+        weeklyService: CalculateWeeklyDatesRangesService,
+      ) => {
+        return new GetDateRangesByFrequencyStrategy(
+          dailyService,
+          weeklyService,
+        );
+      },
+      inject: [
+        CalculateWeeklyDatesRangesService,
+        CalculateDailyDatesRangesService,
+      ],
     },
     {
       provide: CalculateDailyDatesRangesService,
@@ -78,7 +91,19 @@ import {
           dateRangesStrategy,
         );
       },
-      inject: [DisbursementRepository, OrderRepository, MerchantRepository],
+      inject: [
+        DisbursementRepository,
+        OrderRepository,
+        MerchantRepository,
+        GetDateRangesByFrequencyStrategy,
+      ],
+    },
+    {
+      provide: ProcessDisbursementCommand,
+      useFactory: (processDisbursementUseCase: ProcessDisbursementUseCase) => {
+        return new ProcessDisbursementCommand(processDisbursementUseCase);
+      },
+      inject: [ProcessDisbursementUseCase],
     },
   ],
   exports: [

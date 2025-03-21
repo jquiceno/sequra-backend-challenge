@@ -17,7 +17,9 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "process-disbursement:daily": "node dist/run process-disbursement -f DAILY",
+    "process-disbursement:weekly": "node dist/run process-disbursement -f WEEKLY"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -29,6 +31,7 @@
     "class-validator": "^0.14.1",
     "dayjs": "^1.11.13",
     "mongoose": "^8.12.1",
+    "nest-commander": "^3.17.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "uuid": "^11.1.0"
