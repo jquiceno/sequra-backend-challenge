@@ -1,14 +1,22 @@
 import { Disbursement } from '../../domain/entities/disbursement.entity';
 
+type DisbursementProps = {
+  id?: string;
+  merchantId: string;
+  totalAmount: number;
+  startDate: Date;
+  endDate: Date;
+};
+
 export const createDisbursementMock = (
-  props?: Partial<Disbursement>,
+  props?: Partial<DisbursementProps>,
 ): Disbursement => {
-  const defaultProps = {
+  const defaultProps: DisbursementProps = {
     id: '123',
     merchantId: 'merchant-123',
     totalAmount: 1000,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    startDate: new Date(),
+    endDate: new Date(),
   };
 
   return new Disbursement({
