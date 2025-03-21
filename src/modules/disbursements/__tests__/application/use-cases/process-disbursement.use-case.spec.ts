@@ -16,7 +16,6 @@ describe('ProcessDisbursementUseCase', () => {
       findById: jest.fn(),
       findByMerchantId: jest.fn(),
       findAll: jest.fn(),
-      findByMerchantIdAndDateRange: jest.fn(),
       findByMerchantIdAndDateRangeAndStatus: jest.fn(),
       update: jest.fn(),
     };

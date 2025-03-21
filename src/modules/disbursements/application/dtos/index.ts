@@ -1,1 +1,1 @@
-export * from './create-disbursement.dto';
+export * from './process-disbursement.dto';

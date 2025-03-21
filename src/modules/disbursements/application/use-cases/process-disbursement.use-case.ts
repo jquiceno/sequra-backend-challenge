@@ -35,6 +35,8 @@ export class ProcessDisbursementUseCase {
     const disbursement = new Disbursement({
       merchantId,
       totalAmount,
+      startDate,
+      endDate,
     });
 
     const savedDisbursement =

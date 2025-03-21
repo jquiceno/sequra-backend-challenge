@@ -7,6 +7,8 @@ export class Fee {
   ];
 
   constructor(private readonly totalAmount: number) {
+    if (!totalAmount) throw new Error('Total amount is required');
+
     if (totalAmount < 0) {
       throw new Error('Fee cannot be negative');
     }
