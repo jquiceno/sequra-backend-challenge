@@ -5,6 +5,7 @@ import { MerchantsModule } from './modules/merchants/merchants.module';
 import { ResponseInterceptor } from './infrastructure/interceptors';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { OrdersModule } from '@modules/orders/orders.module';
+import { DisbursementModule } from '@modules/disbursements/disbursement.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { OrdersModule } from '@modules/orders/orders.module';
     }),
     MerchantsModule,
     OrdersModule,
+    DisbursementModule,
   ],
   providers: [
     {
